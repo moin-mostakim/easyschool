@@ -7,12 +7,14 @@ import { firstValueFrom } from 'rxjs';
 export class StudentService {
   private readonly logger = new Logger(StudentService.name);
   private readonly studentServiceUrl: string;
+  private readonly authServiceUrl: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
     this.studentServiceUrl = this.configService.get<string>('STUDENT_SERVICE_URL') || 'http://localhost:3003';
+    this.authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
   }
 
   async getAllStudents(query: any, user: any) {
@@ -52,20 +54,86 @@ export class StudentService {
 
   async createStudent(createStudentDto: any, user: any) {
     try {
+      // Use schoolId from DTO if provided (for super_admin), otherwise use user's schoolId
+      const schoolId = createStudentDto.schoolId || user.schoolId;
+      
+      if (!schoolId) {
+        throw new HttpException('School ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Generate a temporary password for the student user
+      const tempPassword = `Temp${Math.random().toString(36).substr(2, 9)}!`;
+      
+      // Step 1: Create a User account for the student
+      let userId: string;
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.post(`${this.authServiceUrl}/auth/register`, {
+            email: createStudentDto.email,
+            password: tempPassword,
+            firstName: createStudentDto.firstName,
+            lastName: createStudentDto.lastName,
+            role: 'student',
+            schoolId: schoolId,
+          }, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        userId = userResponse.data.id;
+        this.logger.log(`Created user for student: ${createStudentDto.email}`);
+      } catch (userError: any) {
+        this.logger.error('Failed to create user for student', userError.stack);
+        // If user already exists, try to find the user by email
+        if (userError.response?.status === 409) {
+          throw new HttpException(
+            `A user with email ${createStudentDto.email} already exists`,
+            HttpStatus.CONFLICT,
+          );
+        }
+        throw new HttpException(
+          userError.response?.data || 'Failed to create user for student',
+          userError.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      
+      // Step 2: Generate admission number if not provided
+      const admissionNumber = createStudentDto.admissionNumber || 
+        `ADM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Step 3: Create the Student record
+      const studentData = {
+        userId: userId,
+        schoolId: schoolId,
+        admissionNumber: admissionNumber,
+        dateOfBirth: createStudentDto.dateOfBirth || null,
+        classId: createStudentDto.classId || null,
+        sectionId: createStudentDto.sectionId || null,
+        grade: createStudentDto.grade || null, // Store grade if needed
+        section: createStudentDto.section || null, // Store section if needed
+        parentId: createStudentDto.parentId || null,
+        gender: createStudentDto.gender || null,
+        address: createStudentDto.address || null,
+      };
+
       const response = await firstValueFrom(
-        this.httpService.post(`${this.studentServiceUrl}/students`, {
-          ...createStudentDto,
-          schoolId: user.schoolId,
-        }, {
+        this.httpService.post(`${this.studentServiceUrl}/students`, studentData, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
-    } catch (error) {
+      
+      // Return student data with user info
+      return {
+        ...response.data,
+        email: createStudentDto.email,
+        firstName: createStudentDto.firstName,
+        lastName: createStudentDto.lastName,
+      };
+    } catch (error: any) {
       this.logger.error('Failed to create student', error.stack);
+      this.logger.error('Student data:', JSON.stringify(createStudentDto, null, 2));
       throw new HttpException(
-        error.response?.data || 'Failed to create student',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error.response?.data || error.message || 'Failed to create student',
+        error.response?.status || error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

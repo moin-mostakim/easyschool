@@ -23,21 +23,21 @@ export class StudentController {
   }
 
   @Post()
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
   @RequirePermissions(Permission.MANAGE_STUDENTS)
   async createStudent(@Body() createStudentDto: any, @Request() req) {
     return this.studentService.createStudent(createStudentDto, req.user);
   }
 
   @Put(':id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
   @RequirePermissions(Permission.MANAGE_STUDENTS)
   async updateStudent(@Param('id') id: string, @Body() updateStudentDto: any, @Request() req) {
     return this.studentService.updateStudent(id, updateStudentDto, req.user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.SCHOOL_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
   @RequirePermissions(Permission.MANAGE_STUDENTS)
   async deleteStudent(@Param('id') id: string, @Request() req) {
     return this.studentService.deleteStudent(id, req.user);

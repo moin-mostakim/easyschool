@@ -21,6 +21,12 @@ export class Student {
   @Column({ nullable: true })
   sectionId: string;
 
+  @Column({ nullable: true })
+  grade: string;
+
+  @Column({ nullable: true })
+  section: string;
+
   @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
