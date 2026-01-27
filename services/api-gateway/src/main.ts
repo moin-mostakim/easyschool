@@ -6,10 +6,15 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS
+  // Enable CORS first (before global prefix)
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
+  });
+
+  // Set global prefix for all routes (except health check)
+  app.setGlobalPrefix('api', {
+    exclude: ['health'],
   });
 
   // Global validation pipe
