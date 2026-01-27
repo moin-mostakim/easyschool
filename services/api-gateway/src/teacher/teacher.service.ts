@@ -86,4 +86,21 @@ export class TeacherService {
       );
     }
   }
+
+  async deleteTeacher(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(`${this.teacherServiceUrl}/teachers/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to delete teacher ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to delete teacher',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

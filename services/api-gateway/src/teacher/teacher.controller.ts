@@ -35,4 +35,11 @@ export class TeacherController {
   async updateTeacher(@Param('id') id: string, @Body() updateTeacherDto: any, @Request() req) {
     return this.teacherService.updateTeacher(id, updateTeacherDto, req.user);
   }
+
+  @Delete(':id')
+  @Roles(UserRole.SCHOOL_ADMIN)
+  @RequirePermissions(Permission.MANAGE_TEACHERS)
+  async deleteTeacher(@Param('id') id: string, @Request() req) {
+    return this.teacherService.deleteTeacher(id, req.user);
+  }
 }

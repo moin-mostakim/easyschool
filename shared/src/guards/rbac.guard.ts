@@ -35,6 +35,11 @@ export class RbacGuard implements CanActivate {
       return false;
     }
 
+    // Super admin bypasses all permission checks
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
     // Check permissions
     if (requiredPermissions) {
       const hasAllPermissions = requiredPermissions.every(permission =>

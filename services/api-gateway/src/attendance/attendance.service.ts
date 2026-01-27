@@ -70,4 +70,41 @@ export class AttendanceService {
       );
     }
   }
+
+  async updateAttendance(id: string, updateAttendanceDto: any, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${this.attendanceServiceUrl}/attendance/${id}`, {
+          ...updateAttendanceDto,
+          schoolId: user.schoolId,
+        }, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to update attendance ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to update attendance',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteAttendance(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(`${this.attendanceServiceUrl}/attendance/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to delete attendance ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to delete attendance',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ParentService } from './parent.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -25,5 +25,10 @@ export class ParentController {
   @Put(':id')
   async updateParent(@Param('id') id: string, @Body() updateParentDto: any, @Request() req) {
     return this.parentService.updateParent(id, updateParentDto, req.user);
+  }
+
+  @Delete(':id')
+  async deleteParent(@Param('id') id: string, @Request() req) {
+    return this.parentService.deleteParent(id, req.user);
   }
 }

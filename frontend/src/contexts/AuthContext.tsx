@@ -39,10 +39,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(response.data);
       setLoading(false);
     } catch (error: any) {
-      // Only clear auth if it's an authentication error (401)
-      if (error.response?.status === 401) {
+      // Only clear auth if it's an authentication error (401 or 403)
+      const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        console.error('Authentication failed:', error.response?.data || error.message);
         localStorage.removeItem('accessToken');
         setUser(null);
+      } else {
+        // For other errors, log but don't logout - might be temporary network issues
+        console.warn('Profile fetch failed (non-auth error):', error.response?.data || error.message);
+        // Keep user logged in if token exists
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          setUser(null);
+        }
       }
       setLoading(false);
     }
@@ -60,13 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const profileResponse = await authAPI.profile();
         setUser(profileResponse.data);
-      } catch (profileError) {
+      } catch (profileError: any) {
         // If profile fetch fails, use the user data from login response
         // This ensures login still works even if profile endpoint has issues
+        console.warn('Profile fetch after login failed, using login response data:', profileError.response?.data || profileError.message);
         setUser(userData);
       }
     } catch (error: any) {
       // Clear any existing auth data on login failure
+      console.error('Login failed:', error.response?.data || error.message);
       localStorage.removeItem('accessToken');
       setUser(null);
       throw error; // Re-throw to let Login component handle the error

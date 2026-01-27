@@ -33,6 +33,23 @@ export class ExamService {
     }
   }
 
+  async getExam(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.examServiceUrl}/exams/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to get exam ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to get exam',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async createExam(createExamDto: any, user: any) {
     try {
       const response = await firstValueFrom(
@@ -65,6 +82,43 @@ export class ExamService {
       this.logger.error(`Failed to enter marks for exam ${examId}`, error.stack);
       throw new HttpException(
         error.response?.data || 'Failed to enter marks',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateExam(id: string, updateExamDto: any, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${this.examServiceUrl}/exams/${id}`, {
+          ...updateExamDto,
+          schoolId: user.schoolId,
+        }, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to update exam ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to update exam',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteExam(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(`${this.examServiceUrl}/exams/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to delete exam ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to delete exam',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -33,6 +33,23 @@ export class FeesService {
     }
   }
 
+  async getFee(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.feesServiceUrl}/fees/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to get fee ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to get fee',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async createFeeStructure(createFeeDto: any, user: any) {
     try {
       const response = await firstValueFrom(
@@ -48,6 +65,43 @@ export class FeesService {
       this.logger.error('Failed to create fee structure', error.stack);
       throw new HttpException(
         error.response?.data || 'Failed to create fee structure',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateFee(id: string, updateFeeDto: any, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${this.feesServiceUrl}/fees/${id}`, {
+          ...updateFeeDto,
+          schoolId: user.schoolId,
+        }, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to update fee ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to update fee',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteFee(id: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.delete(`${this.feesServiceUrl}/fees/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to delete fee ${id}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to delete fee',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
