@@ -1,0 +1,39 @@
+{
+  "name": "easyschool",
+  "version": "1.0.0",
+  "description": "EasySchool - SaaS School Management System with Microservices",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:services && npm run install:frontend",
+    "install:services": "cd services/api-gateway && npm install && cd ../auth-service && npm install && cd ../school-service && npm install && cd ../student-service && npm install && cd ../teacher-service && npm install && cd ../parent-service && npm install && cd ../attendance-service && npm install && cd ../exam-service && npm install && cd ../fees-service && npm install && cd ../communication-service && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "start": "bash start-all-fixed.sh",
+    "start:win": "powershell -ExecutionPolicy Bypass -File start.ps1",
+    "restart": "bash restart-all.sh",
+    "stop": "bash stop.sh",
+    "stop:win": "powershell -ExecutionPolicy Bypass -File stop.ps1",
+    "logs": "bash view-logs.sh",
+    "health": "bash check-health.sh",
+    "init-db": "bash init-databases.sh",
+    "fix-imports": "bash fix-all-imports.sh",
+    "dev": "concurrently \"npm run dev:gateway\" \"npm run dev:auth\" \"npm run dev:school\" \"npm run dev:student\" \"npm run dev:teacher\" \"npm run dev:parent\" \"npm run dev:attendance\" \"npm run dev:exam\" \"npm run dev:fees\" \"npm run dev:communication\"",
+    "dev:gateway": "cd services/api-gateway && npm run start:dev",
+    "dev:auth": "cd services/auth-service && npm run start:dev",
+    "dev:school": "cd services/school-service && npm run start:dev",
+    "dev:student": "cd services/student-service && npm run start:dev",
+    "dev:teacher": "cd services/teacher-service && npm run start:dev",
+    "dev:parent": "cd services/parent-service && npm run start:dev",
+    "dev:attendance": "cd services/attendance-service && npm run start:dev",
+    "dev:exam": "cd services/exam-service && npm run start:dev",
+    "dev:fees": "cd services/fees-service && npm run start:dev",
+    "dev:communication": "cd services/communication-service && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

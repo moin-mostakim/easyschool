@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  postgres-auth:
+    image: postgres:14
+    container_name: easyschool-postgres-auth
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-school:
+    image: postgres:14
+    container_name: easyschool-postgres-school
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_school
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_school_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-student:
+    image: postgres:14
+    container_name: easyschool-postgres-student
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_student
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_student_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-teacher:
+    image: postgres:14
+    container_name: easyschool-postgres-teacher
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_teacher
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_teacher_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-parent:
+    image: postgres:14
+    container_name: easyschool-postgres-parent
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_parent
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_parent_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-attendance:
+    image: postgres:14
+    container_name: easyschool-postgres-attendance
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_attendance
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_attendance_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-exam:
+    image: postgres:14
+    container_name: easyschool-postgres-exam
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_exam
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_exam_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-fees:
+    image: postgres:14
+    container_name: easyschool-postgres-fees
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_fees
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres_fees_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+  postgres-communication:
+    image: postgres:14
+    container_name: easyschool-postgres-communication
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easyschool_communication
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_communication_data:/var/lib/postgresql/data
+    networks:
+      - easyschool-network
+
+volumes:
+  postgres_auth_data:
+  postgres_school_data:
+  postgres_student_data:
+  postgres_teacher_data:
+  postgres_parent_data:
+  postgres_attendance_data:
+  postgres_exam_data:
+  postgres_fees_data:
+  postgres_communication_data:
+
+networks:
+  easyschool-network:
+    driver: bridge
