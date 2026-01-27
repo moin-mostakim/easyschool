@@ -236,24 +236,15 @@ AUTH_SERVICE_URL=http://localhost:3001
 ### Test Commands
 
 ```bash
-# 1. Register a user
+# 1. Register a user (role must be lowercase: student, teacher, parent, school_admin, super_admin)
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123!@#",
-    "firstName": "Test",
-    "lastName": "User",
-    "role": "STUDENT"
-  }'
+  -d '{"email":"test@example.com","password":"Test123!@#","firstName":"Test","lastName":"User","role":"student","schoolId":null}'
 
 # 2. Login
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123!@#"
-  }'
+  -d '{"email":"test@example.com","password":"Test123!@#"}'
 
 # 3. Get profile (with token)
 curl -X GET http://localhost:3000/auth/profile \

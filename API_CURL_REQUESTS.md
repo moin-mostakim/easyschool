@@ -20,16 +20,10 @@ curl -X POST http://localhost:3000/auth/login \
 
 ### 2. User Registration
 ```bash
+# Note: role must be lowercase: student, teacher, parent, school_admin, or super_admin
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123",
-    "firstName": "John",
-    "lastName": "Doe",
-    "role": "STUDENT",
-    "schoolId": "school-id-here"
-  }'
+  -d '{"email":"user@example.com","password":"password123","firstName":"John","lastName":"Doe","role":"student","schoolId":null}'
 ```
 
 ### 3. Refresh Token
