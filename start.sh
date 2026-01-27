@@ -34,6 +34,64 @@ check_port() {
     fi
 }
 
+# Function to kill process on a specific port
+kill_port() {
+    local port=$1
+    local service_name=$2
+    
+    if check_port $port; then
+        echo -e "${YELLOW}Port $port is in use. Stopping existing process...${NC}"
+        local pid=$(lsof -ti :$port 2>/dev/null)
+        if [ -n "$pid" ]; then
+            echo -e "${YELLOW}Killing process $pid on port $port ($service_name)...${NC}"
+            kill -9 $pid 2>/dev/null || true
+            sleep 2
+            # Double check
+            if check_port $port; then
+                local pid2=$(lsof -ti :$port 2>/dev/null)
+                if [ -n "$pid2" ]; then
+                    kill -9 $pid2 2>/dev/null || true
+                    sleep 1
+                fi
+            fi
+            echo -e "${GREEN}Port $port is now free${NC}"
+        fi
+    else
+        echo -e "${GREEN}Port $port is available${NC}"
+    fi
+}
+
+# Function to stop all existing services
+stop_existing_services() {
+    echo -e "\n${YELLOW}Step 0.5: Stopping existing services and freeing ports...${NC}"
+    
+    # Kill all nest processes
+    echo -e "${YELLOW}Stopping all NestJS processes...${NC}"
+    pkill -f "nest start" 2>/dev/null || true
+    pkill -f "nest start --watch" 2>/dev/null || true
+    
+    # Kill all vite processes
+    echo -e "${YELLOW}Stopping all Vite processes...${NC}"
+    pkill -f "vite" 2>/dev/null || true
+    
+    # Kill processes on specific ports
+    echo -e "${YELLOW}Freeing up ports...${NC}"
+    kill_port 3000 "API Gateway"
+    kill_port 3001 "Auth Service"
+    kill_port 3002 "School Service"
+    kill_port 3003 "Student Service"
+    kill_port 3004 "Teacher Service"
+    kill_port 3005 "Parent Service"
+    kill_port 3006 "Attendance Service"
+    kill_port 3007 "Exam Service"
+    kill_port 3008 "Fees Service"
+    kill_port 3009 "Communication Service"
+    kill_port 5173 "Frontend"
+    
+    sleep 2
+    echo -e "${GREEN}Port cleanup complete${NC}\n"
+}
+
 # Function to wait for a service to be ready
 wait_for_service() {
     local port=$1
@@ -72,8 +130,11 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}EasySchool - Starting All Services${NC}"
 echo -e "${GREEN}========================================${NC}\n"
 
-# Step 0: Initialize databases and fix configurations
-echo -e "${YELLOW}Step 0: Setting up databases and configurations...${NC}"
+# Step 0: Stop existing services and free ports
+stop_existing_services
+
+# Step 0.5: Initialize databases and fix configurations
+echo -e "${YELLOW}Step 0.5: Setting up databases and configurations...${NC}"
 if [ -f "init-databases.sh" ]; then
     bash init-databases.sh
 fi
@@ -115,6 +176,7 @@ echo -e "\n${YELLOW}Step 3: Starting backend services...${NC}"
 
 # Start API Gateway
 echo -e "${YELLOW}Starting API Gateway (port 3000)...${NC}"
+kill_port 3000 "API Gateway"
 cd services/api-gateway
 if [ ! -d "node_modules" ]; then
   echo -e "${YELLOW}Installing API Gateway dependencies...${NC}"
@@ -144,6 +206,7 @@ sleep 10
 
 # Start Auth Service
 echo -e "${YELLOW}Starting Auth Service (port 3001)...${NC}"
+kill_port 3001 "Auth Service"
 cd services/auth-service
 if [ ! -d "node_modules" ]; then
   echo -e "${YELLOW}Installing Auth Service dependencies...${NC}"
@@ -172,6 +235,7 @@ sleep 8
 
 # Start School Service
 echo -e "${YELLOW}Starting School Service (port 3002)...${NC}"
+kill_port 3002 "School Service"
 cd services/school-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -185,6 +249,7 @@ sleep 3
 
 # Start Student Service
 echo -e "${YELLOW}Starting Student Service (port 3003)...${NC}"
+kill_port 3003 "Student Service"
 cd services/student-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -198,6 +263,7 @@ sleep 3
 
 # Start Teacher Service
 echo -e "${YELLOW}Starting Teacher Service (port 3004)...${NC}"
+kill_port 3004 "Teacher Service"
 cd services/teacher-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -216,6 +282,7 @@ sleep 3
 
 # Start Parent Service
 echo -e "${YELLOW}Starting Parent Service (port 3005)...${NC}"
+kill_port 3005 "Parent Service"
 cd services/parent-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -229,6 +296,7 @@ sleep 3
 
 # Start Attendance Service
 echo -e "${YELLOW}Starting Attendance Service (port 3006)...${NC}"
+kill_port 3006 "Attendance Service"
 cd services/attendance-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -242,6 +310,7 @@ sleep 3
 
 # Start Exam Service
 echo -e "${YELLOW}Starting Exam Service (port 3007)...${NC}"
+kill_port 3007 "Exam Service"
 cd services/exam-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -255,6 +324,7 @@ sleep 3
 
 # Start Fees Service
 echo -e "${YELLOW}Starting Fees Service (port 3008)...${NC}"
+kill_port 3008 "Fees Service"
 cd services/fees-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -268,6 +338,7 @@ sleep 3
 
 # Start Communication Service
 echo -e "${YELLOW}Starting Communication Service (port 3009)...${NC}"
+kill_port 3009 "Communication Service"
 cd services/communication-service
 if [ ! -d "node_modules" ]; then
   npm install
@@ -281,6 +352,7 @@ sleep 3
 
 # Step 4: Start Frontend
 echo -e "\n${YELLOW}Step 4: Starting Frontend...${NC}"
+kill_port 5173 "Frontend"
 cd frontend
 if [ ! -d "node_modules" ]; then
   echo -e "${YELLOW}Installing frontend dependencies...${NC}"
