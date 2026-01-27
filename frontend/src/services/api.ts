@@ -23,8 +23,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+      // Only redirect if not already on login page
+      // Let AuthContext handle the cleanup
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login') {
+        localStorage.removeItem('accessToken');
+        // Use window.location.href for full page reload to clear state
+        window.location.href = '/login';
+      } else {
+        // If already on login page, just clear token
+        localStorage.removeItem('accessToken');
+      }
     }
     return Promise.reject(error);
   }

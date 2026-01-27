@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { authAPI } from '../services/api';
 
 interface User {
   id: string;
@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchProfile();
     } else {
       setLoading(false);
@@ -36,26 +35,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('/api/auth/profile');
+      const response = await authAPI.profile();
       setUser(response.data);
-    } catch (error) {
-      localStorage.removeItem('accessToken');
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
+      setLoading(false);
+    } catch (error: any) {
+      // Only clear auth if it's an authentication error (401)
+      if (error.response?.status === 401) {
+        localStorage.removeItem('accessToken');
+        setUser(null);
+      }
       setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post('/api/auth/login', { email, password });
-    localStorage.setItem('accessToken', response.data.accessToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-    setUser(response.data.user);
+    try {
+      const response = await authAPI.login(email, password);
+      const { accessToken, user: userData } = response.data;
+      
+      // Store token
+      localStorage.setItem('accessToken', accessToken);
+      
+      // Fetch full profile to ensure we have complete user data
+      try {
+        const profileResponse = await authAPI.profile();
+        setUser(profileResponse.data);
+      } catch (profileError) {
+        // If profile fetch fails, use the user data from login response
+        // This ensures login still works even if profile endpoint has issues
+        setUser(userData);
+      }
+    } catch (error: any) {
+      // Clear any existing auth data on login failure
+      localStorage.removeItem('accessToken');
+      setUser(null);
+      throw error; // Re-throw to let Login component handle the error
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('accessToken');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 

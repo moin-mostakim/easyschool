@@ -16,9 +16,12 @@ export default function Login() {
 
     try {
       await login(email, password);
+      // Only navigate if login was successful
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
+      console.error('Login error:', err);
     }
   };
 
