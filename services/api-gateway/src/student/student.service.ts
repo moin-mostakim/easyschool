@@ -19,9 +19,19 @@ export class StudentService {
 
   async getAllStudents(query: any, user: any) {
     try {
+      // For super_admin, use schoolId from query if provided, otherwise don't filter by schoolId
+      const params: any = { ...query };
+      if (user.role !== 'super_admin' && user.schoolId) {
+        params.schoolId = user.schoolId;
+      }
+      // If super_admin provides schoolId in query, use it
+      if (user.role === 'super_admin' && query.schoolId) {
+        params.schoolId = query.schoolId;
+      }
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.studentServiceUrl}/students`, {
-          params: { ...query, schoolId: user.schoolId },
+          params,
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
@@ -108,8 +118,8 @@ export class StudentService {
         dateOfBirth: createStudentDto.dateOfBirth || null,
         classId: createStudentDto.classId || null,
         sectionId: createStudentDto.sectionId || null,
-        grade: createStudentDto.grade || null, // Store grade if needed
-        section: createStudentDto.section || null, // Store section if needed
+        grade: createStudentDto.grade || null,
+        section: createStudentDto.section || null,
         parentId: createStudentDto.parentId || null,
         gender: createStudentDto.gender || null,
         address: createStudentDto.address || null,
