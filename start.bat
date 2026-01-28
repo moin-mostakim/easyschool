@@ -4,6 +4,10 @@ REM This script starts all services (DB, Backend, Frontend) and preserves logs
 
 setlocal enabledelayedexpansion
 
+REM Get the script directory
+set "SCRIPT_DIR=%~dp0"
+cd /d "%SCRIPT_DIR%"
+
 REM Colors for output (basic)
 set "GREEN=[92m"
 set "YELLOW=[93m"
@@ -24,7 +28,7 @@ echo Step 1: Starting PostgreSQL databases...
 docker-compose ps >nul 2>&1
 if errorlevel 1 (
     echo Starting Docker containers...
-    docker-compose up -d
+    docker-compose up -d >nul 2>&1
     if errorlevel 1 (
         echo Warning: Docker Compose may not be installed or running
         echo Continuing without databases...
@@ -107,16 +111,18 @@ for /L %%i in (1,1,%SERVICE_COUNT%) do (
     set "SERVICE_PATH=!SERVICE_%%i_PATH!"
     set "SERVICE_LOG=!SERVICE_%%i_LOG!"
     
-    echo Starting !SERVICE_NAME! (port !SERVICE_PORT!)...
+    echo Starting !SERVICE_NAME! ^(port !SERVICE_PORT!^)...
     
-    pushd !SERVICE_PATH!
+    pushd "!SERVICE_PATH!"
     
     if not exist "node_modules" (
         call npm install
     )
     
-    set "LOG_FILE=%~dp0logs\!SERVICE_LOG!"
-    start "!SERVICE_NAME!" /MIN cmd /c "npm run start:dev > "!LOG_FILE!" 2>&1"
+    set "LOG_FILE=%SCRIPT_DIR%logs\!SERVICE_LOG!"
+    if not exist "%SCRIPT_DIR%logs" mkdir "%SCRIPT_DIR%logs"
+    set "FULL_SERVICE_PATH=%SCRIPT_DIR!!SERVICE_PATH!"
+    start "!SERVICE_NAME!" /MIN cmd /c "cd /d \"!FULL_SERVICE_PATH!\" && npm run start:dev 1>> \"!LOG_FILE!\" 2>> \"!LOG_FILE!\""
     
     popd
     
@@ -134,8 +140,10 @@ if not exist "node_modules" (
     call npm install
 )
 
-set "FRONTEND_LOG=%~dp0logs\frontend.log"
-start "Frontend" /MIN cmd /c "npm run dev > "!FRONTEND_LOG!" 2>&1"
+set "FRONTEND_LOG=%SCRIPT_DIR%logs\frontend.log"
+if not exist "%SCRIPT_DIR%logs" mkdir "%SCRIPT_DIR%logs"
+set "FULL_FRONTEND_PATH=%SCRIPT_DIR%frontend"
+start "Frontend" /MIN cmd /c "cd /d \"!FULL_FRONTEND_PATH!\" && npm run dev 1>> \"!FRONTEND_LOG!\" 2>> \"!FRONTEND_LOG!\""
 
 popd
 echo Frontend started

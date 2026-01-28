@@ -1,7 +1,7 @@
 # EasySchool - Startup Script for Windows PowerShell
 # This script starts all services (DB, Backend, Frontend) and preserves logs
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # Colors for output
 function Write-ColorOutput($ForegroundColor) {
@@ -12,6 +12,10 @@ function Write-ColorOutput($ForegroundColor) {
     }
     $host.UI.RawUI.ForegroundColor = $fc
 }
+
+# Get script directory
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $scriptDir
 
 # Create logs directory
 if (-not (Test-Path "logs")) {
@@ -25,13 +29,22 @@ Write-Output ""
 
 # Step 1: Start Docker databases
 Write-ColorOutput Yellow "Step 1: Starting PostgreSQL databases..."
-$dockerStatus = docker-compose ps 2>$null
-if ($dockerStatus -notmatch "Up") {
-    docker-compose up -d
-    Write-ColorOutput Green "Databases started"
-    Start-Sleep -Seconds 5
-} else {
-    Write-ColorOutput Green "Databases already running"
+try {
+    $dockerStatus = docker-compose ps 2>$null
+    if ($LASTEXITCODE -ne 0 -or $dockerStatus -notmatch "Up") {
+        Write-ColorOutput Yellow "Starting Docker containers..."
+        docker-compose up -d 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-ColorOutput Green "Databases started"
+            Start-Sleep -Seconds 5
+        } else {
+            Write-ColorOutput Yellow "Warning: Docker Compose may not be installed or running. Continuing without databases..."
+        }
+    } else {
+        Write-ColorOutput Green "Databases already running"
+    }
+} catch {
+    Write-ColorOutput Yellow "Warning: Could not start Docker. Continuing without databases..."
 }
 
 # Step 2: Install dependencies if needed
@@ -64,14 +77,15 @@ $processes = @()
 foreach ($service in $services) {
     Write-ColorOutput Yellow "Starting $($service.Name) (port $($service.Port))..."
     
-    Push-Location $service.Path
+    $servicePath = Join-Path $scriptDir $service.Path
+    Push-Location $servicePath
     
     if (-not (Test-Path "node_modules")) {
         npm install
     }
     
-    $logFile = Join-Path $PSScriptRoot "logs\$($service.Log)"
-    Start-Process -NoNewWindow -FilePath "npm" -ArgumentList "run", "start:dev" -RedirectStandardOutput $logFile -RedirectStandardError $logFile
+    $logFile = Join-Path $scriptDir "logs\$($service.Log)"
+    Start-Process -NoNewWindow -FilePath "npm" -ArgumentList "run", "start:dev" -WorkingDirectory $servicePath -RedirectStandardOutput $logFile -RedirectStandardError $logFile
     
     Pop-Location
     
@@ -82,15 +96,16 @@ foreach ($service in $services) {
 # Step 4: Start Frontend
 Write-Output ""
 Write-ColorOutput Yellow "Step 4: Starting Frontend..."
-Push-Location "frontend"
+$frontendPath = Join-Path $scriptDir "frontend"
+Push-Location $frontendPath
 
 if (-not (Test-Path "node_modules")) {
     Write-ColorOutput Yellow "Installing frontend dependencies..."
     npm install
 }
 
-$frontendLog = Join-Path $PSScriptRoot "logs\frontend.log"
-Start-Process -NoNewWindow -FilePath "npm" -ArgumentList "run", "dev" -RedirectStandardOutput $frontendLog -RedirectStandardError $frontendLog
+$frontendLog = Join-Path $scriptDir "logs\frontend.log"
+Start-Process -NoNewWindow -FilePath "npm" -ArgumentList "run", "dev" -WorkingDirectory $frontendPath -RedirectStandardOutput $frontendLog -RedirectStandardError $frontendLog
 
 Pop-Location
 Write-ColorOutput Green "Frontend started"
@@ -108,22 +123,26 @@ Write-ColorOutput Green "========================================"
 
 function Test-Port {
     param([int]$Port)
-    $connection = Test-NetConnection -ComputerName localhost -Port $Port -WarningAction SilentlyContinue
-    return $connection.TcpTestSucceeded
+    try {
+        $connection = Test-NetConnection -ComputerName localhost -Port $Port -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+        return $connection.TcpTestSucceeded
+    } catch {
+        return $false
+    }
 }
 
 foreach ($service in $services) {
     if (Test-Port -Port $service.Port) {
-        Write-ColorOutput Green "✓ $($service.Name) (port $($service.Port)) - Running"
+        Write-ColorOutput Green "[OK] $($service.Name) (port $($service.Port)) - Running"
     } else {
-        Write-ColorOutput Red "✗ $($service.Name) (port $($service.Port)) - Not running"
+        Write-ColorOutput Red "[X] $($service.Name) (port $($service.Port)) - Not running"
     }
 }
 
 if (Test-Port -Port 5173) {
-    Write-ColorOutput Green "✓ Frontend (port 5173) - Running"
+    Write-ColorOutput Green "[OK] Frontend (port 5173) - Running"
 } else {
-    Write-ColorOutput Red "✗ Frontend (port 5173) - Not running"
+    Write-ColorOutput Red "[X] Frontend (port 5173) - Not running"
 }
 
 Write-Output ""
@@ -147,7 +166,7 @@ try {
     }
 } finally {
     Write-ColorOutput Yellow "Shutting down services..."
-    docker-compose down
-    Get-Process | Where-Object {$_.ProcessName -like "*node*"} | Stop-Process -Force
+    docker-compose down 2>&1 | Out-Null
+    Get-Process | Where-Object {$_.ProcessName -like "*node*"} | Stop-Process -Force -ErrorAction SilentlyContinue
     Write-ColorOutput Green "Cleanup complete"
 }
