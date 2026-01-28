@@ -469,7 +469,10 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=http://api-gateway:3000
+    # Ensure environment variables are available to Vite
+    env_file:
+      - .env
     networks:
       - easyschool-network
     restart: unless-stopped

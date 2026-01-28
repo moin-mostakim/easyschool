@@ -11,10 +11,16 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        // Use host.docker.internal to access services on the host machine
-        // If API Gateway is also in Docker, use the service name instead
-        target: process.env.VITE_API_URL || 'http://host.docker.internal:3000',
+        // Use api-gateway service name when running in Docker
+        // Force use of Docker service name to avoid IPv6 resolution issues
+        target: 'http://api-gateway:3000',
         changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+        },
       },
     },
   },
