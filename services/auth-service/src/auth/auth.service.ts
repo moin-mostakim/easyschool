@@ -84,11 +84,14 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
+    this.logger.log(`[REGISTRATION START] Role: ${registerDto.role}, Email: ${registerDto.email}, Name: ${registerDto.firstName} ${registerDto.lastName}`);
+    
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
     });
 
     if (existingUser) {
+      this.logger.warn(`[REGISTRATION FAILED] Email already exists: ${registerDto.email}, Role: ${registerDto.role}`);
       throw new ConflictException('User with this email already exists');
     }
 
@@ -102,6 +105,7 @@ export class AuthService {
     });
 
     const savedUser = await this.userRepository.save(user);
+    this.logger.log(`[USER CREATED] User ID: ${savedUser.id}, Email: ${savedUser.email}, School ID: ${registerDto.schoolId || 'N/A'}`);
 
     // Assign role
     const role = await this.roleRepository.findOne({
@@ -115,9 +119,12 @@ export class AuthService {
         schoolId: registerDto.schoolId,
       });
       await this.userRoleRepository.save(userRole);
+      this.logger.log(`[ROLE ASSIGNED] User: ${savedUser.email}, Role: ${registerDto.role}, Role ID: ${role.id}`);
+    } else {
+      this.logger.error(`[ROLE NOT FOUND] Role: ${registerDto.role} not found in database`);
     }
 
-    this.logger.log(`User registered: ${registerDto.email}`);
+    this.logger.log(`[REGISTRATION SUCCESS] User registered successfully - Email: ${registerDto.email}, Role: ${registerDto.role}, User ID: ${savedUser.id}, Timestamp: ${new Date().toISOString()}`);
 
     return {
       id: savedUser.id,

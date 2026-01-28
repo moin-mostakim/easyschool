@@ -34,13 +34,14 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     try {
-      this.logger.log(`Registration attempt for: ${registerDto.email}`);
+      this.logger.log(`[API GATEWAY] Registration request received - Role: ${registerDto.role}, Email: ${registerDto.email}, Name: ${registerDto.firstName} ${registerDto.lastName}`);
       const response = await firstValueFrom(
         this.httpService.post(`${this.authServiceUrl}/auth/register`, registerDto),
       );
+      this.logger.log(`[API GATEWAY] Registration successful - Email: ${registerDto.email}, Role: ${registerDto.role}, User ID: ${response.data.id}`);
       return response.data;
     } catch (error) {
-      this.logger.error(`Registration failed for: ${registerDto.email}`, error.stack);
+      this.logger.error(`[API GATEWAY] Registration failed - Email: ${registerDto.email}, Role: ${registerDto.role}, Error: ${error.message}`, error.stack);
       throw new HttpException(
         error.response?.data || 'Registration failed',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
