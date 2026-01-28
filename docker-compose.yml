@@ -1,6 +1,8 @@
-version: '3.8'
+# Docker Compose file for EasySchool - Full System
+# All services (databases, backend services, and frontend) run in Docker
 
 services:
+  # ==================== DATABASES ====================
   postgres-auth:
     image: postgres:14
     container_name: easyschool-postgres-auth
@@ -14,6 +16,12 @@ services:
       - postgres_auth_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-school:
     image: postgres:14
@@ -28,6 +36,12 @@ services:
       - postgres_school_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-student:
     image: postgres:14
@@ -42,6 +56,12 @@ services:
       - postgres_student_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-teacher:
     image: postgres:14
@@ -56,6 +76,12 @@ services:
       - postgres_teacher_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-parent:
     image: postgres:14
@@ -70,6 +96,12 @@ services:
       - postgres_parent_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-attendance:
     image: postgres:14
@@ -84,6 +116,12 @@ services:
       - postgres_attendance_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-exam:
     image: postgres:14
@@ -98,6 +136,12 @@ services:
       - postgres_exam_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-fees:
     image: postgres:14
@@ -112,6 +156,12 @@ services:
       - postgres_fees_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres-communication:
     image: postgres:14
@@ -126,6 +176,306 @@ services:
       - postgres_communication_data:/var/lib/postgresql/data
     networks:
       - easyschool-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== BACKEND SERVICES ====================
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
+    container_name: easyschool-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - DB_HOST=postgres-auth
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_auth
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=1h
+      - JWT_REFRESH_EXPIRES_IN=7d
+    volumes:
+      - ./services/auth-service:/app
+      - ./shared:/app/../../shared
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    command: sh -c "cd /app/../../shared && npm ci 2>/dev/null || true && npm run build && cd /app && npm run start:dev"
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+
+  school-service:
+    build:
+      context: ./services/school-service
+      dockerfile: Dockerfile
+    container_name: easyschool-school-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - NODE_ENV=development
+      - DB_HOST=postgres-school
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_school
+    volumes:
+      - ./services/school-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-school:
+        condition: service_healthy
+
+  student-service:
+    build:
+      context: ./services/student-service
+      dockerfile: Dockerfile
+    container_name: easyschool-student-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - NODE_ENV=development
+      - DB_HOST=postgres-student
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_student
+    volumes:
+      - ./services/student-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-student:
+        condition: service_healthy
+
+  teacher-service:
+    build:
+      context: ./services/teacher-service
+      dockerfile: Dockerfile
+    container_name: easyschool-teacher-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - NODE_ENV=development
+      - DB_HOST=postgres-teacher
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_teacher
+    volumes:
+      - ./services/teacher-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-teacher:
+        condition: service_healthy
+
+  parent-service:
+    build:
+      context: ./services/parent-service
+      dockerfile: Dockerfile
+    container_name: easyschool-parent-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - NODE_ENV=development
+      - DB_HOST=postgres-parent
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_parent
+    volumes:
+      - ./services/parent-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-parent:
+        condition: service_healthy
+
+  attendance-service:
+    build:
+      context: ./services/attendance-service
+      dockerfile: Dockerfile
+    container_name: easyschool-attendance-service
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - NODE_ENV=development
+      - DB_HOST=postgres-attendance
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_attendance
+    volumes:
+      - ./services/attendance-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-attendance:
+        condition: service_healthy
+
+  exam-service:
+    build:
+      context: ./services/exam-service
+      dockerfile: Dockerfile
+    container_name: easyschool-exam-service
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - NODE_ENV=development
+      - DB_HOST=postgres-exam
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_exam
+    volumes:
+      - ./services/exam-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-exam:
+        condition: service_healthy
+
+  fees-service:
+    build:
+      context: ./services/fees-service
+      dockerfile: Dockerfile
+    container_name: easyschool-fees-service
+    ports:
+      - "3008:3008"
+    environment:
+      - PORT=3008
+      - NODE_ENV=development
+      - DB_HOST=postgres-fees
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_fees
+    volumes:
+      - ./services/fees-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-fees:
+        condition: service_healthy
+
+  communication-service:
+    build:
+      context: ./services/communication-service
+      dockerfile: Dockerfile
+    container_name: easyschool-communication-service
+    ports:
+      - "3009:3009"
+    environment:
+      - PORT=3009
+      - NODE_ENV=development
+      - DB_HOST=postgres-communication
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easyschool_communication
+    volumes:
+      - ./services/communication-service:/app
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      postgres-communication:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
+    container_name: easyschool-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - SCHOOL_SERVICE_URL=http://school-service:3002
+      - STUDENT_SERVICE_URL=http://student-service:3003
+      - TEACHER_SERVICE_URL=http://teacher-service:3004
+      - PARENT_SERVICE_URL=http://parent-service:3005
+      - ATTENDANCE_SERVICE_URL=http://attendance-service:3006
+      - EXAM_SERVICE_URL=http://exam-service:3007
+      - FEES_SERVICE_URL=http://fees-service:3008
+      - COMMUNICATION_SERVICE_URL=http://communication-service:3009
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=1h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - FRONTEND_URL=http://localhost:5173
+    volumes:
+      - ./services/api-gateway:/app
+      - ./shared:/app/../../shared
+      - /app/node_modules
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    command: sh -c "cd /app/../../shared && npm ci 2>/dev/null || true && npm run build && cd /app && npm run start:dev"
+    depends_on:
+      - auth-service
+      - school-service
+      - student-service
+      - teacher-service
+      - parent-service
+      - attendance-service
+      - exam-service
+      - fees-service
+      - communication-service
+
+  # ==================== FRONTEND ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: easyschool-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - easyschool-network
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    command: npm run dev -- --host 0.0.0.0
 
 volumes:
   postgres_auth_data:

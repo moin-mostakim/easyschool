@@ -166,17 +166,17 @@ for /L %%i in (1,1,%SERVICE_COUNT%) do (
     
     netstat -an | findstr ":!SERVICE_PORT! " >nul 2>&1
     if errorlevel 1 (
-        echo [X] !SERVICE_NAME! (port !SERVICE_PORT!) - Not running
+        echo [X] !SERVICE_NAME! ^(port !SERVICE_PORT!^) ^- Not running
     ) else (
-        echo [OK] !SERVICE_NAME! (port !SERVICE_PORT!) - Running
+        echo [OK] !SERVICE_NAME! ^(port !SERVICE_PORT!^) ^- Running
     )
 )
 
 netstat -an | findstr ":5173 " >nul 2>&1
 if errorlevel 1 (
-    echo [X] Frontend (port 5173) - Not running
+    echo [X] Frontend ^(port 5173^) ^- Not running
 ) else (
-    echo [OK] Frontend (port 5173) - Running
+    echo [OK] Frontend ^(port 5173^) ^- Running
 )
 
 echo.
