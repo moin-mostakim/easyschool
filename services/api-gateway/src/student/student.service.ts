@@ -38,9 +38,32 @@ export class StudentService {
       
       // Fetch user info for students to include name and email
       // This is needed for frontend dropdowns and displays
+      // Handle different response structures: response.data.data or response.data
+      let studentsArray: any[] = [];
+      let responseStructure: any = {};
+      
       if (response.data?.data && Array.isArray(response.data.data)) {
+        // Paginated response structure: { data: [...], total, page, etc. }
+        studentsArray = response.data.data;
+        responseStructure = { ...response.data };
+      } else if (Array.isArray(response.data)) {
+        // Direct array response
+        studentsArray = response.data;
+        responseStructure = {};
+      } else if (response.data?.students && Array.isArray(response.data.students)) {
+        // Alternative structure: { students: [...] }
+        studentsArray = response.data.students;
+        responseStructure = { ...response.data };
+      }
+      
+      if (studentsArray.length > 0) {
+        this.logger.log(`Fetching user info for ${studentsArray.length} students`);
         const studentsWithUserInfo = await Promise.all(
-          response.data.data.map(async (student: any) => {
+          studentsArray.map(async (student: any) => {
+            if (!student.userId) {
+              this.logger.warn(`Student ${student.id} has no userId`);
+              return student;
+            }
             try {
               const userResponse = await firstValueFrom(
                 this.httpService.get(`${this.authServiceUrl}/auth/users/${student.userId}`, {
@@ -49,20 +72,31 @@ export class StudentService {
               );
               return {
                 ...student,
-                email: userResponse.data.email,
-                firstName: userResponse.data.firstName,
-                lastName: userResponse.data.lastName,
+                email: userResponse.data?.email || student.email,
+                firstName: userResponse.data?.firstName || student.firstName,
+                lastName: userResponse.data?.lastName || student.lastName,
               };
-            } catch (error) {
-              this.logger.warn(`Failed to fetch user info for student ${student.userId}`);
+            } catch (error: any) {
+              this.logger.warn(`Failed to fetch user info for student ${student.userId}: ${error.message}`);
               return student;
             }
           }),
         );
-        return {
-          ...response.data,
-          data: studentsWithUserInfo,
-        };
+        
+        // Return in the same structure as received
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          return {
+            ...responseStructure,
+            data: studentsWithUserInfo,
+          };
+        } else if (Array.isArray(response.data)) {
+          return studentsWithUserInfo;
+        } else {
+          return {
+            ...responseStructure,
+            data: studentsWithUserInfo,
+          };
+        }
       }
       
       return response.data;
