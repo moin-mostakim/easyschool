@@ -227,12 +227,18 @@ export class StudentService {
         }),
       );
       
-      // Return student data with user info
+      // Return student data with ALL submitted fields from frontend
       return {
         ...response.data,
         email: createStudentDto.email,
         firstName: createStudentDto.firstName,
         lastName: createStudentDto.lastName,
+        dateOfBirth: createStudentDto.dateOfBirth || response.data.dateOfBirth,
+        grade: createStudentDto.grade || response.data.grade,
+        section: createStudentDto.section || response.data.section,
+        parentId: createStudentDto.parentId || response.data.parentId,
+        schoolId: schoolId,
+        admissionNumber: admissionNumber,
       };
     } catch (error: any) {
       this.logger.error('Failed to create student', error.stack);
@@ -246,12 +252,49 @@ export class StudentService {
 
   async updateStudent(id: string, updateStudentDto: any, user: any) {
     try {
+      // First get the current student to preserve userId
+      const currentStudent = await firstValueFrom(
+        this.httpService.get(`${this.studentServiceUrl}/students/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      
       const response = await firstValueFrom(
         this.httpService.put(`${this.studentServiceUrl}/students/${id}`, updateStudentDto, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${currentStudent.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data?.email || updateStudentDto.email,
+          firstName: userResponse.data?.firstName || updateStudentDto.firstName,
+          lastName: userResponse.data?.lastName || updateStudentDto.lastName,
+          dateOfBirth: updateStudentDto.dateOfBirth || response.data.dateOfBirth,
+          grade: updateStudentDto.grade || response.data.grade,
+          section: updateStudentDto.section || response.data.section,
+          parentId: updateStudentDto.parentId || response.data.parentId,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for student ${id}`);
+        return {
+          ...response.data,
+          email: updateStudentDto.email,
+          firstName: updateStudentDto.firstName,
+          lastName: updateStudentDto.lastName,
+          dateOfBirth: updateStudentDto.dateOfBirth || response.data.dateOfBirth,
+          grade: updateStudentDto.grade || response.data.grade,
+          section: updateStudentDto.section || response.data.section,
+          parentId: updateStudentDto.parentId || response.data.parentId,
+        };
+      }
     } catch (error) {
       this.logger.error(`Failed to update student ${id}`, error.stack);
       throw new HttpException(

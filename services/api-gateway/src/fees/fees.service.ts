@@ -81,7 +81,17 @@ export class FeesService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        studentId: createFeeDto.studentId,
+        amount: createFeeDto.amount,
+        dueDate: createFeeDto.dueDate,
+        description: createFeeDto.description || response.data.description,
+        name: createFeeDto.name || response.data.name,
+        schoolId: schoolId,
+        isPaid: createFeeDto.isPaid || false,
+      };
     } catch (error: any) {
       this.logger.error('Failed to create fee structure', error.stack);
       this.logger.error('Fee data:', JSON.stringify(createFeeDto, null, 2));
@@ -102,7 +112,15 @@ export class FeesService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        studentId: updateFeeDto.studentId || response.data.studentId,
+        amount: updateFeeDto.amount || response.data.amount,
+        dueDate: updateFeeDto.dueDate || response.data.dueDate,
+        description: updateFeeDto.description || response.data.description,
+        name: updateFeeDto.name || response.data.name,
+      };
     } catch (error) {
       this.logger.error(`Failed to update fee ${id}`, error.stack);
       throw new HttpException(

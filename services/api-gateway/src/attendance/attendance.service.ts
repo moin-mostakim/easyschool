@@ -43,7 +43,15 @@ export class AttendanceService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        studentId: markAttendanceDto.studentId,
+        date: markAttendanceDto.date,
+        status: markAttendanceDto.status,
+        remarks: markAttendanceDto.remarks || response.data.remarks,
+        schoolId: schoolId,
+      };
     } catch (error: any) {
       this.logger.error('Failed to mark attendance', error.stack);
       this.logger.error('Attendance data:', JSON.stringify(markAttendanceDto, null, 2));
@@ -99,7 +107,14 @@ export class AttendanceService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        studentId: updateAttendanceDto.studentId || response.data.studentId,
+        date: updateAttendanceDto.date || response.data.date,
+        status: updateAttendanceDto.status || response.data.status,
+        remarks: updateAttendanceDto.remarks || response.data.remarks,
+      };
     } catch (error) {
       this.logger.error(`Failed to update attendance ${id}`, error.stack);
       throw new HttpException(

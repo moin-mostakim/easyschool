@@ -169,12 +169,16 @@ export class TeacherService {
         }),
       );
       
-      // Return teacher data with user info
+      // Return teacher data with ALL submitted fields from frontend
       return {
         ...response.data,
         email: createTeacherDto.email,
         firstName: createTeacherDto.firstName,
         lastName: createTeacherDto.lastName,
+        subject: createTeacherDto.subject || response.data.subject,
+        qualification: createTeacherDto.qualification || response.data.qualification,
+        schoolId: schoolId,
+        employeeId: employeeId,
       };
     } catch (error: any) {
       this.logger.error('Failed to create teacher', error.stack);
@@ -188,12 +192,45 @@ export class TeacherService {
 
   async updateTeacher(id: string, updateTeacherDto: any, user: any) {
     try {
+      // First get the current teacher to preserve userId
+      const currentTeacher = await firstValueFrom(
+        this.httpService.get(`${this.teacherServiceUrl}/teachers/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      
       const response = await firstValueFrom(
         this.httpService.put(`${this.teacherServiceUrl}/teachers/${id}`, updateTeacherDto, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${currentTeacher.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data?.email || updateTeacherDto.email,
+          firstName: userResponse.data?.firstName || updateTeacherDto.firstName,
+          lastName: userResponse.data?.lastName || updateTeacherDto.lastName,
+          subject: updateTeacherDto.subject || response.data.subject,
+          qualification: updateTeacherDto.qualification || response.data.qualification,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for teacher ${id}`);
+        return {
+          ...response.data,
+          email: updateTeacherDto.email,
+          firstName: updateTeacherDto.firstName,
+          lastName: updateTeacherDto.lastName,
+          subject: updateTeacherDto.subject || response.data.subject,
+          qualification: updateTeacherDto.qualification || response.data.qualification,
+        };
+      }
     } catch (error) {
       this.logger.error(`Failed to update teacher ${id}`, error.stack);
       throw new HttpException(

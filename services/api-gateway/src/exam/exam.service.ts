@@ -77,7 +77,18 @@ export class ExamService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        name: createExamDto.name,
+        subject: createExamDto.subject || response.data.subject,
+        date: createExamDto.date || createExamDto.examDate || response.data.date || response.data.examDate,
+        examDate: createExamDto.examDate || createExamDto.date || response.data.examDate || response.data.date,
+        maxMarks: createExamDto.maxMarks || createExamDto.totalMarks || response.data.maxMarks || response.data.totalMarks,
+        totalMarks: createExamDto.totalMarks || createExamDto.maxMarks || response.data.totalMarks || response.data.maxMarks,
+        description: createExamDto.description || response.data.description,
+        schoolId: schoolId,
+      };
     } catch (error: any) {
       this.logger.error('Failed to create exam', error.stack);
       this.logger.error('Exam data:', JSON.stringify(createExamDto, null, 2));
@@ -115,7 +126,17 @@ export class ExamService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      // Return ALL submitted data from frontend
+      return {
+        ...response.data,
+        name: updateExamDto.name || response.data.name,
+        subject: updateExamDto.subject || response.data.subject,
+        date: updateExamDto.date || updateExamDto.examDate || response.data.date || response.data.examDate,
+        examDate: updateExamDto.examDate || updateExamDto.date || response.data.examDate || response.data.date,
+        maxMarks: updateExamDto.maxMarks || updateExamDto.totalMarks || response.data.maxMarks || response.data.totalMarks,
+        totalMarks: updateExamDto.totalMarks || updateExamDto.maxMarks || response.data.totalMarks || response.data.maxMarks,
+        description: updateExamDto.description || response.data.description,
+      };
     } catch (error) {
       this.logger.error(`Failed to update exam ${id}`, error.stack);
       throw new HttpException(

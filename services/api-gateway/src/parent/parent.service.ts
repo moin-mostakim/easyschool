@@ -163,12 +163,15 @@ export class ParentService {
         }),
       );
       
-      // Return parent data with user info
+      // Return parent data with ALL submitted fields from frontend
       return {
         ...response.data,
         email: createParentDto.email,
         firstName: createParentDto.firstName,
         lastName: createParentDto.lastName,
+        phone: createParentDto.phone || response.data.phone,
+        relationship: createParentDto.relationship || response.data.relationship,
+        schoolId: schoolId,
       };
     } catch (error: any) {
       this.logger.error('Failed to create parent', error.stack);
@@ -182,12 +185,45 @@ export class ParentService {
 
   async updateParent(id: string, updateParentDto: any, user: any) {
     try {
+      // First get the current parent to preserve userId
+      const currentParent = await firstValueFrom(
+        this.httpService.get(`${this.parentServiceUrl}/parents/${id}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      
       const response = await firstValueFrom(
         this.httpService.put(`${this.parentServiceUrl}/parents/${id}`, updateParentDto, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${currentParent.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data?.email || updateParentDto.email,
+          firstName: userResponse.data?.firstName || updateParentDto.firstName,
+          lastName: userResponse.data?.lastName || updateParentDto.lastName,
+          phone: updateParentDto.phone || response.data.phone,
+          relationship: updateParentDto.relationship || response.data.relationship,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for parent ${id}`);
+        return {
+          ...response.data,
+          email: updateParentDto.email,
+          firstName: updateParentDto.firstName,
+          lastName: updateParentDto.lastName,
+          phone: updateParentDto.phone || response.data.phone,
+          relationship: updateParentDto.relationship || response.data.relationship,
+        };
+      }
     } catch (error) {
       this.logger.error(`Failed to update parent ${id}`, error.stack);
       throw new HttpException(
