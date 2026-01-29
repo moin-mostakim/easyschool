@@ -56,6 +56,8 @@ export class StudentService {
         responseStructure = { ...response.data };
       }
       
+      this.logger.log(`Processing ${studentsArray.length} students. Response structure: ${JSON.stringify(Object.keys(response.data || {}))}`);
+      
       if (studentsArray.length > 0) {
         this.logger.log(`Fetching user info for ${studentsArray.length} students`);
         const studentsWithUserInfo = await Promise.all(
@@ -65,19 +67,24 @@ export class StudentService {
               return student;
             }
             try {
+              this.logger.debug(`Fetching user info for userId: ${student.userId}`);
               const userResponse = await firstValueFrom(
                 this.httpService.get(`${this.authServiceUrl}/auth/users/${student.userId}`, {
                   headers: { Authorization: `Bearer ${user.accessToken}` },
                 }),
               );
-              return {
+              this.logger.debug(`User response for ${student.userId}:`, JSON.stringify(userResponse.data));
+              const enrichedStudent = {
                 ...student,
-                email: userResponse.data?.email || student.email,
-                firstName: userResponse.data?.firstName || student.firstName,
-                lastName: userResponse.data?.lastName || student.lastName,
+                email: userResponse.data?.email || student.email || '',
+                firstName: userResponse.data?.firstName || student.firstName || '',
+                lastName: userResponse.data?.lastName || student.lastName || '',
               };
+              this.logger.debug(`Enriched student:`, JSON.stringify({ id: enrichedStudent.id, firstName: enrichedStudent.firstName, lastName: enrichedStudent.lastName, email: enrichedStudent.email }));
+              return enrichedStudent;
             } catch (error: any) {
-              this.logger.warn(`Failed to fetch user info for student ${student.userId}: ${error.message}`);
+              this.logger.error(`Failed to fetch user info for student ${student.userId}: ${error.message}`, error.stack);
+              this.logger.error(`Error response:`, JSON.stringify(error.response?.data));
               return student;
             }
           }),
@@ -85,20 +92,28 @@ export class StudentService {
         
         // Return in the same structure as received
         if (response.data?.data && Array.isArray(response.data.data)) {
-          return {
+          const result = {
             ...responseStructure,
             data: studentsWithUserInfo,
           };
+          this.logger.log(`Returning paginated response with ${studentsWithUserInfo.length} enriched students`);
+          return result;
         } else if (Array.isArray(response.data)) {
+          this.logger.log(`Returning array response with ${studentsWithUserInfo.length} enriched students`);
           return studentsWithUserInfo;
         } else {
-          return {
+          const result = {
             ...responseStructure,
             data: studentsWithUserInfo,
           };
+          this.logger.log(`Returning alternative structure with ${studentsWithUserInfo.length} enriched students`);
+          return result;
         }
+      } else {
+        this.logger.warn(`No students found in response. Returning original response.`);
       }
       
+      this.logger.log(`Returning original response structure`);
       return response.data;
     } catch (error) {
       this.logger.error('Failed to get students', error.stack);
