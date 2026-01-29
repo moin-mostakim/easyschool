@@ -52,20 +52,38 @@ export class ExamService {
 
   async createExam(createExamDto: any, user: any) {
     try {
+      const schoolId = createExamDto.schoolId || user.schoolId;
+      
+      if (!schoolId) {
+        throw new HttpException('School ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Ensure required fields are present
+      if (!createExamDto.name) {
+        throw new HttpException('Exam name is required', HttpStatus.BAD_REQUEST);
+      }
+      if (!createExamDto.examDate) {
+        throw new HttpException('Exam date is required', HttpStatus.BAD_REQUEST);
+      }
+      if (createExamDto.totalMarks === undefined || createExamDto.totalMarks === null) {
+        createExamDto.totalMarks = 100; // Default to 100 if not provided
+      }
+
       const response = await firstValueFrom(
         this.httpService.post(`${this.examServiceUrl}/exams`, {
           ...createExamDto,
-          schoolId: user.schoolId,
+          schoolId: schoolId,
         }, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to create exam', error.stack);
+      this.logger.error('Exam data:', JSON.stringify(createExamDto, null, 2));
       throw new HttpException(
-        error.response?.data || 'Failed to create exam',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error.response?.data || error.message || 'Failed to create exam',
+        error.response?.status || error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

@@ -4,9 +4,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../../../../shared/src/decorators/roles.decorator';
 import { RequirePermissions } from '../../../../shared/src/decorators/roles.decorator';
 import { UserRole, Permission } from '../../../../shared/src/enums/roles.enum';
+import { RbacGuard } from '../../../../shared/src/guards/rbac.guard';
 
 @Controller('students')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 

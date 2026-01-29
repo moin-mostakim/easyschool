@@ -35,6 +35,36 @@ export class StudentService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
+      
+      // Fetch user info for students to include name and email
+      // This is needed for frontend dropdowns and displays
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        const studentsWithUserInfo = await Promise.all(
+          response.data.data.map(async (student: any) => {
+            try {
+              const userResponse = await firstValueFrom(
+                this.httpService.get(`${this.authServiceUrl}/auth/users/${student.userId}`, {
+                  headers: { Authorization: `Bearer ${user.accessToken}` },
+                }),
+              );
+              return {
+                ...student,
+                email: userResponse.data.email,
+                firstName: userResponse.data.firstName,
+                lastName: userResponse.data.lastName,
+              };
+            } catch (error) {
+              this.logger.warn(`Failed to fetch user info for student ${student.userId}`);
+              return student;
+            }
+          }),
+        );
+        return {
+          ...response.data,
+          data: studentsWithUserInfo,
+        };
+      }
+      
       return response.data;
     } catch (error) {
       this.logger.error('Failed to get students', error.stack);
@@ -52,7 +82,24 @@ export class StudentService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${response.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data.email,
+          firstName: userResponse.data.firstName,
+          lastName: userResponse.data.lastName,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for student ${id}`);
+        return response.data;
+      }
     } catch (error) {
       this.logger.error(`Failed to get student ${id}`, error.stack);
       throw new HttpException(

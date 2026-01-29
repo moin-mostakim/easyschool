@@ -52,20 +52,42 @@ export class FeesService {
 
   async createFeeStructure(createFeeDto: any, user: any) {
     try {
+      const schoolId = createFeeDto.schoolId || user.schoolId;
+      
+      if (!schoolId) {
+        throw new HttpException('School ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Ensure required fields are present
+      if (!createFeeDto.studentId) {
+        throw new HttpException('Student ID is required', HttpStatus.BAD_REQUEST);
+      }
+      if (!createFeeDto.name) {
+        throw new HttpException('Fee name is required', HttpStatus.BAD_REQUEST);
+      }
+      if (createFeeDto.amount === undefined || createFeeDto.amount === null) {
+        throw new HttpException('Fee amount is required', HttpStatus.BAD_REQUEST);
+      }
+      if (!createFeeDto.dueDate) {
+        throw new HttpException('Due date is required', HttpStatus.BAD_REQUEST);
+      }
+
       const response = await firstValueFrom(
         this.httpService.post(`${this.feesServiceUrl}/fees`, {
           ...createFeeDto,
-          schoolId: user.schoolId,
+          schoolId: schoolId,
+          isPaid: createFeeDto.isPaid || false,
         }, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to create fee structure', error.stack);
+      this.logger.error('Fee data:', JSON.stringify(createFeeDto, null, 2));
       throw new HttpException(
-        error.response?.data || 'Failed to create fee structure',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error.response?.data || error.message || 'Failed to create fee structure',
+        error.response?.status || error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

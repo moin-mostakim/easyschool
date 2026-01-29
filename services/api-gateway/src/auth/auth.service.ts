@@ -80,4 +80,21 @@ export class AuthService {
       );
     }
   }
+
+  async getUserById(userId: string, user: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.authServiceUrl}/auth/users/${userId}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Get user ${userId} failed`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Get user failed',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

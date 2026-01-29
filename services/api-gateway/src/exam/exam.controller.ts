@@ -3,9 +3,10 @@ import { ExamService } from './exam.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../../../shared/src/decorators/roles.decorator';
 import { Permission } from '../../../../shared/src/enums/roles.enum';
+import { RbacGuard } from '../../../../shared/src/guards/rbac.guard';
 
 @Controller('exams')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
 

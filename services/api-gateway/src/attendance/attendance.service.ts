@@ -17,21 +17,39 @@ export class AttendanceService {
 
   async markAttendance(markAttendanceDto: any, user: any) {
     try {
+      const schoolId = markAttendanceDto.schoolId || user.schoolId;
+      
+      if (!schoolId) {
+        throw new HttpException('School ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Ensure required fields are present
+      if (!markAttendanceDto.studentId) {
+        throw new HttpException('Student ID is required', HttpStatus.BAD_REQUEST);
+      }
+      if (!markAttendanceDto.date) {
+        throw new HttpException('Date is required', HttpStatus.BAD_REQUEST);
+      }
+      if (!markAttendanceDto.status) {
+        markAttendanceDto.status = 'present'; // Default to present if not provided
+      }
+
       const response = await firstValueFrom(
         this.httpService.post(`${this.attendanceServiceUrl}/attendance`, {
           ...markAttendanceDto,
-          schoolId: user.schoolId,
+          schoolId: schoolId,
           markedBy: user.userId,
         }, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to mark attendance', error.stack);
+      this.logger.error('Attendance data:', JSON.stringify(markAttendanceDto, null, 2));
       throw new HttpException(
-        error.response?.data || 'Failed to mark attendance',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error.response?.data || error.message || 'Failed to mark attendance',
+        error.response?.status || error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

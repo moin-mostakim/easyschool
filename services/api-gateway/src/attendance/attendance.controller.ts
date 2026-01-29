@@ -3,9 +3,10 @@ import { AttendanceService } from './attendance.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../../../shared/src/decorators/roles.decorator';
 import { Permission } from '../../../../shared/src/enums/roles.enum';
+import { RbacGuard } from '../../../../shared/src/guards/rbac.guard';
 
 @Controller('attendances')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RbacGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 

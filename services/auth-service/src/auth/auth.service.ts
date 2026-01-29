@@ -218,6 +218,28 @@ export class AuthService {
     };
   }
 
+  async getUserById(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['userRoles', 'userRoles.role'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      role: this.getPrimaryRole(user),
+      schoolId: user.schoolId,
+      lastLoginAt: user.lastLoginAt,
+    };
+  }
+
   private getUserPermissions(user: User): Permission[] {
     const permissions = new Set<Permission>();
     

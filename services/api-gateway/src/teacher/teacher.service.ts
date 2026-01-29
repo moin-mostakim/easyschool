@@ -52,20 +52,79 @@ export class TeacherService {
 
   async createTeacher(createTeacherDto: any, user: any) {
     try {
+      const authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
+      const schoolId = createTeacherDto.schoolId || user.schoolId;
+      
+      if (!schoolId) {
+        throw new HttpException('School ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      // Generate a temporary password for the teacher user
+      const tempPassword = `Temp${Math.random().toString(36).substr(2, 9)}!`;
+      
+      // Step 1: Create a User account for the teacher
+      let userId: string;
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.post(`${authServiceUrl}/auth/register`, {
+            email: createTeacherDto.email,
+            password: tempPassword,
+            firstName: createTeacherDto.firstName,
+            lastName: createTeacherDto.lastName,
+            role: 'teacher',
+            schoolId: schoolId,
+          }, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        userId = userResponse.data.id;
+        this.logger.log(`Created user for teacher: ${createTeacherDto.email}`);
+      } catch (userError: any) {
+        this.logger.error('Failed to create user for teacher', userError.stack);
+        if (userError.response?.status === 409) {
+          throw new HttpException(
+            `A user with email ${createTeacherDto.email} already exists`,
+            HttpStatus.CONFLICT,
+          );
+        }
+        throw new HttpException(
+          userError.response?.data || 'Failed to create user for teacher',
+          userError.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      
+      // Step 2: Generate employee ID if not provided
+      const employeeId = createTeacherDto.employeeId || 
+        `EMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Step 3: Create the Teacher record
+      const teacherData = {
+        userId: userId,
+        schoolId: schoolId,
+        employeeId: employeeId,
+        assignedClasses: createTeacherDto.assignedClasses || [],
+        assignedSubjects: createTeacherDto.assignedSubjects || [],
+      };
+
       const response = await firstValueFrom(
-        this.httpService.post(`${this.teacherServiceUrl}/teachers`, {
-          ...createTeacherDto,
-          schoolId: user.schoolId,
-        }, {
+        this.httpService.post(`${this.teacherServiceUrl}/teachers`, teacherData, {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
-    } catch (error) {
+      
+      // Return teacher data with user info
+      return {
+        ...response.data,
+        email: createTeacherDto.email,
+        firstName: createTeacherDto.firstName,
+        lastName: createTeacherDto.lastName,
+      };
+    } catch (error: any) {
       this.logger.error('Failed to create teacher', error.stack);
+      this.logger.error('Teacher data:', JSON.stringify(createTeacherDto, null, 2));
       throw new HttpException(
-        error.response?.data || 'Failed to create teacher',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error.response?.data || error.message || 'Failed to create teacher',
+        error.response?.status || error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
