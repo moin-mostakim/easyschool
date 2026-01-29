@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { studentAPI, schoolAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Students() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -46,6 +48,11 @@ export default function Students() {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Student created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create student';
+      showError(errorMessage);
     },
   });
 
@@ -55,6 +62,11 @@ export default function Students() {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Student updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update student';
+      showError(errorMessage);
     },
   });
 
@@ -62,6 +74,11 @@ export default function Students() {
     mutationFn: studentAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      showSuccess('Student deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete student';
+      showError(errorMessage);
     },
   });
 

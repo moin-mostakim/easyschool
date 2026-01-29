@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { schoolAPI } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Schools() {
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +33,11 @@ export default function Schools() {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
       setShowModal(false);
       resetForm();
+      showSuccess('School created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create school';
+      showError(errorMessage);
     },
   });
 
@@ -40,6 +47,11 @@ export default function Schools() {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
       setShowModal(false);
       resetForm();
+      showSuccess('School updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update school';
+      showError(errorMessage);
     },
   });
 
@@ -47,6 +59,11 @@ export default function Schools() {
     mutationFn: schoolAPI.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
+      showSuccess('School approved successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to approve school';
+      showError(errorMessage);
     },
   });
 
@@ -54,6 +71,11 @@ export default function Schools() {
     mutationFn: schoolAPI.suspend,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schools'] });
+      showSuccess('School suspended successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to suspend school';
+      showError(errorMessage);
     },
   });
 

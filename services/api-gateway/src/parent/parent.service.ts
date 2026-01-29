@@ -7,22 +7,62 @@ import { firstValueFrom } from 'rxjs';
 export class ParentService {
   private readonly logger = new Logger(ParentService.name);
   private readonly parentServiceUrl: string;
+  private readonly authServiceUrl: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
     this.parentServiceUrl = this.configService.get<string>('PARENT_SERVICE_URL') || 'http://localhost:3005';
+    this.authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
   }
 
   async getAllParents(query: any, user: any) {
     try {
+      const params: any = { ...query };
+      // For super_admin, allow filtering by schoolId from query
+      if (user.role !== 'super_admin' && user.schoolId) {
+        params.schoolId = user.schoolId;
+      }
+      if (user.role === 'super_admin' && query.schoolId) {
+        params.schoolId = query.schoolId;
+      }
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.parentServiceUrl}/parents`, {
-          params: { ...query, schoolId: user.schoolId },
+          params,
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
+      
+      // Fetch user info for parents to include name and email
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        const parentsWithUserInfo = await Promise.all(
+          response.data.data.map(async (parent: any) => {
+            try {
+              const userResponse = await firstValueFrom(
+                this.httpService.get(`${this.authServiceUrl}/auth/users/${parent.userId}`, {
+                  headers: { Authorization: `Bearer ${user.accessToken}` },
+                }),
+              );
+              return {
+                ...parent,
+                email: userResponse.data.email,
+                firstName: userResponse.data.firstName,
+                lastName: userResponse.data.lastName,
+              };
+            } catch (error) {
+              this.logger.warn(`Failed to fetch user info for parent ${parent.userId}`);
+              return parent;
+            }
+          }),
+        );
+        return {
+          ...response.data,
+          data: parentsWithUserInfo,
+        };
+      }
+      
       return response.data;
     } catch (error) {
       this.logger.error('Failed to get parents', error.stack);
@@ -40,7 +80,24 @@ export class ParentService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${response.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data.email,
+          firstName: userResponse.data.firstName,
+          lastName: userResponse.data.lastName,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for parent ${id}`);
+        return response.data;
+      }
     } catch (error) {
       this.logger.error(`Failed to get parent ${id}`, error.stack);
       throw new HttpException(

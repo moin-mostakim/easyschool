@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { feesAPI, studentAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Fees() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -46,6 +48,11 @@ export default function Fees() {
       queryClient.invalidateQueries({ queryKey: ['fees'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Fee structure created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create fee structure';
+      showError(errorMessage);
     },
   });
 
@@ -55,6 +62,11 @@ export default function Fees() {
       queryClient.invalidateQueries({ queryKey: ['fees'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Fee structure updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update fee structure';
+      showError(errorMessage);
     },
   });
 
@@ -62,6 +74,11 @@ export default function Fees() {
     mutationFn: feesAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fees'] });
+      showSuccess('Fee structure deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete fee structure';
+      showError(errorMessage);
     },
   });
 
@@ -71,6 +88,11 @@ export default function Fees() {
       queryClient.invalidateQueries({ queryKey: ['fees'] });
       setShowPaymentModal(false);
       setPaymentData({ amount: '', paymentDate: new Date().toISOString().split('T')[0], paymentMethod: 'CASH' });
+      showSuccess('Payment recorded successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to record payment';
+      showError(errorMessage);
     },
   });
 

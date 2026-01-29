@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import '../App.css';
 
 export default function Login() {
@@ -8,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const { showError } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,6 +23,7 @@ export default function Login() {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
+      showError(errorMessage);
       console.error('Login error:', err);
     }
   };

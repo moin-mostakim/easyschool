@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { parentAPI, schoolAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Parents() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -43,6 +45,11 @@ export default function Parents() {
       queryClient.invalidateQueries({ queryKey: ['parents'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Parent created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create parent';
+      showError(errorMessage);
     },
   });
 
@@ -52,6 +59,11 @@ export default function Parents() {
       queryClient.invalidateQueries({ queryKey: ['parents'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Parent updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update parent';
+      showError(errorMessage);
     },
   });
 
@@ -59,6 +71,11 @@ export default function Parents() {
     mutationFn: parentAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parents'] });
+      showSuccess('Parent deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete parent';
+      showError(errorMessage);
     },
   });
 

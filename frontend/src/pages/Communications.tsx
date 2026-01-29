@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { communicationAPI } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Communications() {
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [activeTab, setActiveTab] = useState<'notices' | 'messages'>('notices');
@@ -36,6 +38,11 @@ export default function Communications() {
       queryClient.invalidateQueries({ queryKey: ['notices'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Notice created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create notice';
+      showError(errorMessage);
     },
   });
 
@@ -45,6 +52,11 @@ export default function Communications() {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Message sent successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to send message';
+      showError(errorMessage);
     },
   });
 

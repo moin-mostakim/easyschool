@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { teacherAPI, schoolAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Teachers() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -43,6 +45,11 @@ export default function Teachers() {
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Teacher created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create teacher';
+      showError(errorMessage);
     },
   });
 
@@ -52,6 +59,11 @@ export default function Teachers() {
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Teacher updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update teacher';
+      showError(errorMessage);
     },
   });
 
@@ -59,6 +71,11 @@ export default function Teachers() {
     mutationFn: teacherAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      showSuccess('Teacher deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete teacher';
+      showError(errorMessage);
     },
   });
 

@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { examAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Exams() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -33,6 +35,11 @@ export default function Exams() {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Exam created successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to create exam';
+      showError(errorMessage);
     },
   });
 
@@ -42,6 +49,11 @@ export default function Exams() {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Exam updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update exam';
+      showError(errorMessage);
     },
   });
 
@@ -49,6 +61,11 @@ export default function Exams() {
     mutationFn: examAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
+      showSuccess('Exam deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete exam';
+      showError(errorMessage);
     },
   });
 

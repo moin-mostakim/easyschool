@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import { attendanceAPI, studentAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import './CRUD.css';
 
 export default function Attendance() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
@@ -39,6 +41,11 @@ export default function Attendance() {
       queryClient.invalidateQueries({ queryKey: ['attendances'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Attendance marked successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to mark attendance';
+      showError(errorMessage);
     },
   });
 
@@ -48,6 +55,11 @@ export default function Attendance() {
       queryClient.invalidateQueries({ queryKey: ['attendances'] });
       setShowModal(false);
       resetForm();
+      showSuccess('Attendance updated successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to update attendance';
+      showError(errorMessage);
     },
   });
 
@@ -55,6 +67,11 @@ export default function Attendance() {
     mutationFn: attendanceAPI.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendances'] });
+      showSuccess('Attendance deleted successfully!');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Failed to delete attendance';
+      showError(errorMessage);
     },
   });
 

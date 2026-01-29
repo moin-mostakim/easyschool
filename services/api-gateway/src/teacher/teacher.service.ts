@@ -7,22 +7,62 @@ import { firstValueFrom } from 'rxjs';
 export class TeacherService {
   private readonly logger = new Logger(TeacherService.name);
   private readonly teacherServiceUrl: string;
+  private readonly authServiceUrl: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
     this.teacherServiceUrl = this.configService.get<string>('TEACHER_SERVICE_URL') || 'http://localhost:3004';
+    this.authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL') || 'http://localhost:3001';
   }
 
   async getAllTeachers(query: any, user: any) {
     try {
+      const params: any = { ...query };
+      // For super_admin, allow filtering by schoolId from query
+      if (user.role !== 'super_admin' && user.schoolId) {
+        params.schoolId = user.schoolId;
+      }
+      if (user.role === 'super_admin' && query.schoolId) {
+        params.schoolId = query.schoolId;
+      }
+
       const response = await firstValueFrom(
         this.httpService.get(`${this.teacherServiceUrl}/teachers`, {
-          params: { ...query, schoolId: user.schoolId },
+          params,
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
+      
+      // Fetch user info for teachers to include name and email
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        const teachersWithUserInfo = await Promise.all(
+          response.data.data.map(async (teacher: any) => {
+            try {
+              const userResponse = await firstValueFrom(
+                this.httpService.get(`${this.authServiceUrl}/auth/users/${teacher.userId}`, {
+                  headers: { Authorization: `Bearer ${user.accessToken}` },
+                }),
+              );
+              return {
+                ...teacher,
+                email: userResponse.data.email,
+                firstName: userResponse.data.firstName,
+                lastName: userResponse.data.lastName,
+              };
+            } catch (error) {
+              this.logger.warn(`Failed to fetch user info for teacher ${teacher.userId}`);
+              return teacher;
+            }
+          }),
+        );
+        return {
+          ...response.data,
+          data: teachersWithUserInfo,
+        };
+      }
+      
       return response.data;
     } catch (error) {
       this.logger.error('Failed to get teachers', error.stack);
@@ -40,7 +80,24 @@ export class TeacherService {
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }),
       );
-      return response.data;
+      
+      // Fetch user info to include name and email
+      try {
+        const userResponse = await firstValueFrom(
+          this.httpService.get(`${this.authServiceUrl}/auth/users/${response.data.userId}`, {
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }),
+        );
+        return {
+          ...response.data,
+          email: userResponse.data.email,
+          firstName: userResponse.data.firstName,
+          lastName: userResponse.data.lastName,
+        };
+      } catch (error) {
+        this.logger.warn(`Failed to fetch user info for teacher ${id}`);
+        return response.data;
+      }
     } catch (error) {
       this.logger.error(`Failed to get teacher ${id}`, error.stack);
       throw new HttpException(

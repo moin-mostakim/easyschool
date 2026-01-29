@@ -11,9 +11,17 @@ import Exams from './pages/Exams';
 import Fees from './pages/Fees';
 import Communications from './pages/Communications';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import './App.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
@@ -118,9 +126,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <ToastProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
