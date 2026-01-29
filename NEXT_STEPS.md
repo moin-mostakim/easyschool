@@ -24,6 +24,19 @@
 ## 🔄 Current Status
 
 - ✅ API Gateway is running on port 3000
+
+### Starting API Gateway (port 3000)
+
+If the API Gateway is not running, start it with the **production build** (avoids RbacGuard/Reflector dependency issue in watch mode):
+
+```bash
+cd services/api-gateway
+npm run build
+npm run start:prod
+# Or: node dist/main.js
+```
+
+Then verify: `curl http://localhost:3000/health`
 - ✅ Health endpoint working: `http://localhost:3000/health`
 - ✅ All new routes are registered (check logs)
 - ✅ Code pushed to GitHub

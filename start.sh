@@ -65,10 +65,11 @@ kill_port() {
 stop_existing_services() {
     echo -e "\n${YELLOW}Step 0.5: Stopping existing services and freeing ports...${NC}"
     
-    # Kill all nest processes
+    # Kill all nest processes and node dist/main (API Gateway prod mode)
     echo -e "${YELLOW}Stopping all NestJS processes...${NC}"
     pkill -f "nest start" 2>/dev/null || true
     pkill -f "nest start --watch" 2>/dev/null || true
+    pkill -f "node dist/main" 2>/dev/null || true
     
     # Kill all vite processes
     echo -e "${YELLOW}Stopping all Vite processes...${NC}"
@@ -119,6 +120,7 @@ cleanup() {
         $DOCKER_COMPOSE down 2>/dev/null || true
     fi
     pkill -f "nest start" 2>/dev/null || true
+    pkill -f "node dist/main" 2>/dev/null || true
     pkill -f "vite" 2>/dev/null || true
     echo -e "${GREEN}Cleanup complete${NC}"
     exit 0
@@ -197,12 +199,12 @@ if [ ! -f "dist/main.js" ]; then
   find dist -name "main.js" 2>&1 | head -3
   exit 1
 fi
-# Start in watch mode (it will rebuild but we have initial build)
-npm run start:dev > ../../logs/api-gateway.log 2>&1 &
+# Start with production build (start:dev fails due to RbacGuard/Reflector in watch mode)
+node dist/main.js > ../../logs/api-gateway.log 2>&1 &
 API_GATEWAY_PID=$!
 cd ../..
-echo -e "${GREEN}API Gateway started (PID: $API_GATEWAY_PID)${NC}"
-sleep 10
+echo -e "${GREEN}API Gateway started (PID: $API_GATEWAY_PID) - port 3000${NC}"
+sleep 8
 
 # Start Auth Service
 echo -e "${YELLOW}Starting Auth Service (port 3001)...${NC}"

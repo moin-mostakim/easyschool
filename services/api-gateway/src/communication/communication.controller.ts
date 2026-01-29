@@ -3,10 +3,8 @@ import { CommunicationService } from './communication.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../../../shared/src/decorators/roles.decorator';
 import { Permission } from '../../../../shared/src/enums/roles.enum';
-import { RbacGuard } from '../../../../shared/src/guards/rbac.guard';
-
 @Controller('communications')
-@UseGuards(JwtAuthGuard, RbacGuard)
+@UseGuards(JwtAuthGuard)
 export class CommunicationController {
   constructor(private readonly communicationService: CommunicationService) {}
 
